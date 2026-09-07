@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Community Health Triage Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F2EFE9;
+    --panel: #FFFFFF;
+    --ink: #24312E;
+    --clay: #A85338;
+    --sage: #6B8E7C;
+    --sage-light: #E4ECE7;
+    --urgent: #B23A2E;
+    --urgent-light: #F6E4E1;
+    --moderate: #C68A3D;
+    --moderate-light: #F7ECDA;
+    --mild: #4C7A63;
+    --mild-light: #E1EEE7;
+    --muted: #6B7570;
+    --border: #DAD4C7;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Public Sans', sans-serif;
+    min-height: 100vh;
+    padding: 20px 16px 60px;
+  }
+
+  .container {
+    max-width: 560px;
+    margin: 0 auto;
+  }
+
+  header {
+    margin-bottom: 20px;
+  }
+
+  header h1 {
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 1.25;
+  }
+
+  header p {
+    font-size: 14px;
+    color: var(--muted);
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+
+  .disclaimer {
+    background: var(--sage-light);
+    border: 1px solid var(--sage);
+    border-radius: 6px;
+    padding: 12px 14px;
+    font-size: 13px;
+    line-height: 1.5;
+    margin-bottom: 24px;
+    color: var(--ink);
+  }
+
+  .section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px;
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .section-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+
+  .symptom-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .symptom-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .symptom-item:hover {
+    border-color: var(--sage);
+  }
+
+  .symptom-item.checked {
+    border-color: var(--clay);
+    background: #FBF3F0;
+  }
+
+  .symptom-item input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--clay);
+    flex-shrink: 0;
+  }
+
+  .symptom-item label {
+    font-size: 15px;
+    cursor: pointer;
+    flex: 1;
+  }
+
+  #checkBtn {
+    width: 100%;
+    padding: 16px;
+    background: var(--clay);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Public Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+
+  #checkBtn:hover { background: #8F4530; }
+  #checkBtn:focus-visible { outline: 3px solid var(--sage); outline-offset: 2px; }
+
+  #checkBtn:disabled {
+    background: var(--muted);
+    cursor: not-allowed;
+  }
+
+  /* ===== Result panel with urgency gauge (signature element) ===== */
+  #resultPanel {
+    display: none;
+    background: var(--panel);
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 20px;
+    border: 2px solid var(--border);
+  }
+
+  #resultPanel.show { display: block; }
+
+  .urgency-label {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    font-weight: 600;
+  }
+
+  .urgency-value {
+    font-size: 26px;
+    font-weight: 800;
+    margin-top: 4px;
+  }
+
+  /* Vitals-style gauge — arc-based, like a clinical readout */
+  .gauge-container {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 14px;
+  }
+
+  .gauge-arc-wrap {
+    flex-shrink: 0;
+  }
+
+  .gauge-track {
+    stroke: var(--border);
+    fill: none;
+    stroke-width: 10;
+  }
+
+  .gauge-fill-arc {
+    fill: none;
+    stroke-width: 10;
+    stroke-linecap: round;
+    transition: stroke-dasharray 0.8s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.5s ease;
+  }
+
+  .gauge-recommendation {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  #symptomsRecap {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  #symptomsRecap strong {
+    color: var(--ink);
+  }
+
+  .reset-link {
+    display: inline-block;
+    margin-top: 16px;
+    font-size: 13px;
+    color: var(--clay);
+    text-decoration: underline;
+    cursor: pointer;
+    background: none;
+    border: none;
+    font-family: 'Public Sans', sans-serif;
+    padding: 0;
+  }
+
+  footer {
+    margin-top: 28px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>Community Health Triage Assistant</h1>
+    <p>Select the symptoms present, and get a preliminary guidance level for next steps.</p>
+  </header>
+
+  <div class="disclaimer">
+    This tool gives a preliminary suggestion only. It does not diagnose 
+    any condition and is not a substitute for a qualified health worker. 
+    When in doubt, always seek in-person care.
+  </div>
+
+  <div class="section">
+    <div class="section-title">Respiratory symptoms</div>
+    <div class="section-sub">Select any that apply</div>
+    <div class="symptom-list">
+      <div class="symptom-item">
+        <input type="checkbox" id="s-cough" data-category="respiratory" data-weight="1" data-redflag="false">
+        <label for="s-cough">Persistent cough</label>
+      </div>
+      <div class="symptom-item">
+        <input type="checkbox" id="s-fever" data-category="respiratory" data-weight="1" data-redflag="false">
+        <label for="s-fever">Fever</label>
+      </div>
+      <div class="symptom-item">
+        <input type="checkbox" id="s-breathing" data-category="respiratory" data-weight="3" data-redflag="true">
+        <label for="s-breathing">Difficulty breathing <span style="color:var(--urgent); font-size:12px;">(urgent sign)</span></label>
+      </div>
+      <div class="symptom-item">
+        <input type="checkbox" id="s-chestpain" data-category="respiratory" data-weight="3" data-redflag="true">
+        <label for="s-chestpain">Chest pain or tightness <span style="color:var(--urgent); font-size:12px;">(urgent sign)</span></label>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Skin symptoms</div>
+    <div class="section-sub">Select any that apply</div>
+    <div class="symptom-list">
+      <div class="symptom-item">
+        <input type="checkbox" id="s-rash" data-category="skin" data-weight="1" data-redflag="false">
+        <label for="s-rash">Rash</label>
+      </div>
+      <div class="symptom-item">
+        <input type="checkbox" id="s-itching" data-category="skin" data-weight="1" data-redflag="false">
+        <label for="s-itching">Itching</label>
+      </div>
+      <div class="symptom-item">
+        <input type="checkbox" id="s-swelling" data-category="skin" data-weight="2" data-redflag="false">
+        <label for="s-swelling">Swelling</label>
+      </div>
+      <div class="symptom-item">
+        <input type="checkbox" id="s-spreading" data-category="skin" data-weight="2" data-redflag="true">
+        <label for="s-spreading">Rapidly spreading or worsening <span style="color:var(--urgent); font-size:12px;">(urgent sign)</span></label>
+      </div>
+    </div>
+  </div>
+
+  <button id="checkBtn">Check symptoms</button>
+
+  <div id="resultPanel">
+    <div class="urgency-label">Guidance level</div>
+    <div class="urgency-value" id="urgencyValueText">—</div>
+
+    <div class="gauge-container">
+      <div class="gauge-arc-wrap">
+        <svg width="90" height="90" viewBox="0 0 90 90">
+          <circle class="gauge-track" cx="45" cy="45" r="38" />
+          <circle class="gauge-fill-arc" id="gaugeArc" cx="45" cy="45" r="38"
+                   transform="rotate(-90 45 45)" />
+        </svg>
+      </div>
+      <div class="gauge-recommendation" id="recommendationText"></div>
+    </div>
+
+    <div id="symptomsRecap"></div>
+
+    <button class="reset-link" id="resetBtn">Check different symptoms</button>
+  </div>
+
+  <footer>
+    This is a concept demo using a simple symptom-weight checklist, not 
+    medical image analysis or a trained diagnostic model. See the README 
+    for what a full version would require.
+  </footer>
+</div>
+
+<script>
+  const checkBtn = document.getElementById("checkBtn");
+  const resultPanel = document.getElementById("resultPanel");
+  const urgencyValueText = document.getElementById("urgencyValueText");
+  const gaugeArc = document.getElementById("gaugeArc");
+  const recommendationText = document.getElementById("recommendationText");
+  const symptomsRecap = document.getElementById("symptomsRecap");
+  const resetBtn = document.getElementById("resetBtn");
+
+  // Highlight symptom rows when checked, for visual feedback
+  document.querySelectorAll(".symptom-item").forEach((item) => {
+    const checkbox = item.querySelector("input[type=checkbox]");
+    checkbox.addEventListener("change", () => {
+      item.classList.toggle("checked", checkbox.checked);
+    });
+  });
+
+  // Circle circumference for r=38: 2 * PI * 38 ≈ 238.76
+  const CIRCUMFERENCE = 2 * Math.PI * 38;
+  gaugeArc.style.strokeDasharray = `0 ${CIRCUMFERENCE}`;
+
+  // =====================================================================
+  // YOUR TURN: write calculateUrgency(symptoms) below.
+  //
+  // `symptoms` will be an array of objects like:
+  //   { label: "Difficulty breathing", category: "respiratory", weight: 3 }
+  //
+  // It should return an object like:
+  //   { level: "Low" | "Moderate" | "High", gaugePercent: 0-100,
+  //     color: "#...", advice: "..." }
+  //
+  // Thinking prompt (same pattern as calculateRisk / buildRecommendation):
+  //   - Add up the `weight` of every selected symptom into a total score.
+  //   - Try simple thresholds: e.g. total score of 5+ = "High", 2-4 =
+  //     "Moderate", 0-1 (but not zero) = "Low".
+  //   - gaugePercent is just for the visual — you could reuse the same
+  //     score, scaled to fit 0-100 (e.g. score * 15, capped at 100).
+  //   - Write a plain-language `advice` string for each level — e.g. High
+  //     might say "See a health worker as soon as possible", Low might
+  //     say "Monitor at home and recheck if symptoms worsen."
+  // =====================================================================
+
+  function calculateUrgency(symptoms) {
+    let hasRedFlag = false;
+    for (let i = 0; i < symptoms.length; i++) {
+      if (symptoms[i].redFlag === true) {
+        hasRedFlag = true;
+      }
+    }
+
+    if (hasRedFlag) {
+      return {
+        level: "High",
+        gaugePercent: 100,
+        color: "#B23A2E",
+        advice: "One or more symptoms selected are urgent warning signs. See a health worker as soon as possible."
+      };
+    }
+
+    // STEP 2: if no red flag, fall back to the total-score method (already written)
+    let total = 0;
+    for (let i = 0; i < symptoms.length; i++) {
+      total = total + symptoms[i].weight;
+    }
+
+    if (total >= 4) {
+      return {
+        level: "Moderate",
+        gaugePercent: 60,
+        color: "#C68A3D",
+        advice: "Consider seeing a health worker soon, especially if symptoms don't improve in the next day or two."
+      };
+    } else {
+      return {
+        level: "Low",
+        gaugePercent: 25,
+        color: "#4C7A63",
+        advice: "Monitor at home and recheck if symptoms worsen or new symptoms appear."
+      };
+    }
+  }
+
+  function getSelectedSymptoms() {
+    const checked = document.querySelectorAll(".symptom-item input:checked");
+    return Array.from(checked).map((cb) => ({
+      label: cb.closest(".symptom-item").querySelector("label").textContent.trim(),
+      category: cb.dataset.category,
+      weight: parseInt(cb.dataset.weight, 10),
+      redFlag: cb.dataset.redflag === "true"
+    }));
+  }
+
+  checkBtn.addEventListener("click", () => {
+    const symptoms = getSelectedSymptoms();
+
+    if (symptoms.length === 0) {
+      alert("Select at least one symptom first.");
+      return;
+    }
+
+    const result = calculateUrgency(symptoms);
+
+    resultPanel.classList.add("show");
+    urgencyValueText.textContent = result.level;
+    urgencyValueText.style.color = result.color;
+    recommendationText.textContent = result.advice;
+
+    const offset = CIRCUMFERENCE - (result.gaugePercent / 100) * CIRCUMFERENCE;
+    gaugeArc.style.stroke = result.color;
+    gaugeArc.style.strokeDasharray = `${CIRCUMFERENCE - offset} ${CIRCUMFERENCE}`;
+
+    symptomsRecap.innerHTML = "<strong>Selected symptoms:</strong> " +
+      symptoms.map(s => s.label).join(", ");
+
+    resultPanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  });
+
+  resetBtn.addEventListener("click", () => {
+    document.querySelectorAll(".symptom-item input").forEach((cb) => {
+      cb.checked = false;
+      cb.closest(".symptom-item").classList.remove("checked");
+    });
+    resultPanel.classList.remove("show");
+  });
+</script>
+
+</body>
+</html>
