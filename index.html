@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
+  /* Global theme variables */
   :root {
     --paper: #F2EFE9;
     --panel: #FFFFFF;
@@ -24,16 +25,21 @@
     --border: #DAD4C7;
   }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  * { 
+    box-sizing: border-box; 
+    margin: 0; 
+    padding: 0; 
+  }
 
   body {
-    background: var(--paper);
+    background-color: var(--paper);
     color: var(--ink);
     font-family: 'Public Sans', sans-serif;
     min-height: 100vh;
     padding: 20px 16px 60px;
   }
 
+  /* Main wrapper layout */
   .container {
     max-width: 560px;
     margin: 0 auto;
@@ -111,7 +117,7 @@
 
   .symptom-item.checked {
     border-color: var(--clay);
-    background: #FBF3F0;
+    background-color: #FBF3F0;
   }
 
   .symptom-item input[type="checkbox"] {
@@ -127,6 +133,7 @@
     flex: 1;
   }
 
+  /* Submit action button */
   #checkBtn {
     width: 100%;
     padding: 16px;
@@ -141,15 +148,21 @@
     margin-top: 8px;
   }
 
-  #checkBtn:hover { background: #8F4530; }
-  #checkBtn:focus-visible { outline: 3px solid var(--sage); outline-offset: 2px; }
+  #checkBtn:hover { 
+    background: #8F4530; 
+  }
+  
+  #checkBtn:focus-visible { 
+    outline: 3px solid var(--sage); 
+    outline-offset: 2px; 
+  }
 
   #checkBtn:disabled {
     background: var(--muted);
     cursor: not-allowed;
   }
 
-  /* ===== Result panel with urgency gauge (signature element) ===== */
+  /* Result panel with urgency gauge (signature element) */
   #resultPanel {
     display: none;
     background: var(--panel);
@@ -159,7 +172,9 @@
     border: 2px solid var(--border);
   }
 
-  #resultPanel.show { display: block; }
+  #resultPanel.show { 
+    display: block; 
+  }
 
   .urgency-label {
     font-size: 13px;
@@ -242,19 +257,19 @@
 </head>
 <body>
 
-<div class="container">
+<main class="container">
   <header>
     <h1>Community Health Triage Assistant</h1>
     <p>Select the symptoms present, and get a preliminary guidance level for next steps.</p>
   </header>
 
-  <div class="disclaimer">
+  <div class="disclaimer" aria-label="Medical Disclaimer">
     This tool gives a preliminary suggestion only. It does not diagnose 
     any condition and is not a substitute for a qualified health worker. 
     When in doubt, always seek in-person care.
   </div>
 
-  <div class="section">
+  <section class="section">
     <div class="section-title">Respiratory symptoms</div>
     <div class="section-sub">Select any that apply</div>
     <div class="symptom-list">
@@ -275,9 +290,9 @@
         <label for="s-chestpain">Chest pain or tightness <span style="color:var(--urgent); font-size:12px;">(urgent sign)</span></label>
       </div>
     </div>
-  </div>
+  </section>
 
-  <div class="section">
+  <section class="section">
     <div class="section-title">Skin symptoms</div>
     <div class="section-sub">Select any that apply</div>
     <div class="symptom-list">
@@ -298,7 +313,7 @@
         <label for="s-spreading">Rapidly spreading or worsening <span style="color:var(--urgent); font-size:12px;">(urgent sign)</span></label>
       </div>
     </div>
-  </div>
+  </section>
 
   <button id="checkBtn">Check symptoms</button>
 
@@ -311,7 +326,7 @@
         <svg width="90" height="90" viewBox="0 0 90 90">
           <circle class="gauge-track" cx="45" cy="45" r="38" />
           <circle class="gauge-fill-arc" id="gaugeArc" cx="45" cy="45" r="38"
-                   transform="rotate(-90 45 45)" />
+                    transform="rotate(-90 45 45)" />
         </svg>
       </div>
       <div class="gauge-recommendation" id="recommendationText"></div>
@@ -327,7 +342,7 @@
     medical image analysis or a trained diagnostic model. See the README 
     for what a full version would require.
   </footer>
-</div>
+</main>
 
 <script>
   const checkBtn = document.getElementById("checkBtn");
@@ -350,27 +365,6 @@
   const CIRCUMFERENCE = 2 * Math.PI * 38;
   gaugeArc.style.strokeDasharray = `0 ${CIRCUMFERENCE}`;
 
-  // =====================================================================
-  // YOUR TURN: write calculateUrgency(symptoms) below.
-  //
-  // `symptoms` will be an array of objects like:
-  //   { label: "Difficulty breathing", category: "respiratory", weight: 3 }
-  //
-  // It should return an object like:
-  //   { level: "Low" | "Moderate" | "High", gaugePercent: 0-100,
-  //     color: "#...", advice: "..." }
-  //
-  // Thinking prompt (same pattern as calculateRisk / buildRecommendation):
-  //   - Add up the `weight` of every selected symptom into a total score.
-  //   - Try simple thresholds: e.g. total score of 5+ = "High", 2-4 =
-  //     "Moderate", 0-1 (but not zero) = "Low".
-  //   - gaugePercent is just for the visual — you could reuse the same
-  //     score, scaled to fit 0-100 (e.g. score * 15, capped at 100).
-  //   - Write a plain-language `advice` string for each level — e.g. High
-  //     might say "See a health worker as soon as possible", Low might
-  //     say "Monitor at home and recheck if symptoms worsen."
-  // =====================================================================
-
   function calculateUrgency(symptoms) {
     let hasRedFlag = false;
     for (let i = 0; i < symptoms.length; i++) {
@@ -388,7 +382,7 @@
       };
     }
 
-    // STEP 2: if no red flag, fall back to the total-score method (already written)
+    // if no red flag, fall back to total score
     let total = 0;
     for (let i = 0; i < symptoms.length; i++) {
       total = total + symptoms[i].weight;
